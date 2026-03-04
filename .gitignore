@@ -7,6 +7,3 @@ __pycache__/
 
 # macOS
 .DS_Store
-
-# (optional) if you still have this folder
-pythonProject/
