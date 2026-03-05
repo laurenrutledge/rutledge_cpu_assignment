@@ -22,6 +22,16 @@ EXPECTED = {
     "tie_breaker_case.txt": "Start at home 1 and go to home 2 getting 4 pieces of candy",
     "dont_go_here_all_exceed_max.txt": "Don't go here",
     "all_homes_exceed_max.txt": "Don't go here",
+    "all_homes_fit.txt": "Start at home 1 and go to home 4 getting 35 pieces of candy",
+    "tie_same_best_sum_different_lengths.txt": "Start at home 1 and go to home 2 getting 5 pieces of candy",
+    "leading_zeros_before_best.txt": "Start at home 1 and go to home 3 getting 3 pieces of candy",
+    "best_window_at_end.txt": "Start at home 5 and go to home 6 getting 8 pieces of candy",
+    "first_home_over_max_others_not.txt": "Start at home 2 and go to home 3 getting 2 pieces of candy",
+    "all_zeros_max_positive.txt": "Start at home 1 and go to home 1 getting 0 pieces of candy",
+    "zeros_then_max_then_zeros": "Start at home 1 and go to home 2 getting 5 pieces of candy",
+    # ---- STRESS TESTS ----
+    "stress_10000_all_ones.txt": "Start at home 1 and go to home 1000 getting 1000 pieces of candy",
+    "stress_10000_alternating.txt": "Start at home 2 and go to home 2 getting 1 pieces of candy",
 }
 
 def run_one_test(input_path: str) -> str:

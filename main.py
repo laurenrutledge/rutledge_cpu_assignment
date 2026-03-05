@@ -18,10 +18,10 @@
 
 - Regarding Value Ranges for the Stored Data Values:
     - From the prompt:
-        Variable | Constraint
-           homes |	0 < homes ≤ 10000
-            max	 |  0 ≤ max ≤ 1000
-         pieces	 |  0 ≤ pieces ≤ 1000
+        Variable                 | Constraint
+           homes                 |	0 < homes ≤ 10000
+           max_candy_allowed	 |  0 ≤ max ≤ 1000
+           pieces	             |  0 ≤ pieces ≤ 1000
     This also confirms that **All candy values are non-negative** (which is why the
     sliding window technique works
     - IF negative numbers were allowed, the algorithm used here would break
@@ -47,11 +47,26 @@
 - Regarding Output Uniqueness:
     - The given prompt specifies the "tie breaking rule":
         - If multiple sequences have the same best sum, choose the one with the smallest
-        starting home / home index
+        starting home / home index (e.g., when trailing homes give 0 candy).
+- Additional notes on ties involving zeros:
+    - It is possible for multiple windows to have the same best sum and the same starting
+      index. In these cases, this implementation keeps the first such window encountered
+      while scanning left-to-right, which corresponds to the smallest ending home index
+      among those tied windows with the same start and sum.
+    - Example 1:
+        If house 1 gives the maximum allowed candy and houses 2–5 give 0 candy,
+        multiple windows produce the same sum (homes 1–1, 1–2, 1–3, etc.).
+        The implementation keeps the first one encountered, so the output is:
+        visiting only house 1.
+    - Example 2:
+        If houses 1–2 give 0 candy, house 3 gives the maximum candy, and the rest
+        give 0 candy, several windows reach the same best sum (3–3, 2–3, 1–3, etc.).
+        The prompt’s tie-breaking rule selects the window with the smallest starting
+        index, so the output is visiting homes 1–3.
 
 - Regarding the minimum window size:
     - The prompt gives us that the output must be "one or more consecutive homes"
-        - The window size must be >= 1, OR, a printed message: "Don’t go here” will
+        - The window size must be >= 1, OR, a printed message: "Don't go here” will
         be outputted
         - We CANNOT return an empty window
 
@@ -60,7 +75,7 @@
     the sum <= max.
         - If there are 3 homes in the sequence, the max is 2, and all three of the homes' give
         out 3+ pieces of candy, then the children cannot visit ANY home.
-        - If a failure case is inputted, the output will be: "Don’t go here”
+        - If a failure case is inputted, the output will be: "Don't go here”
 
 - Implicit Algorithm Assumptions:
     - Since we are assuming that pieces will always be >= 0, we are able to use the "sliding
@@ -75,7 +90,6 @@
 # ------------------------------------------------------------
 INPUT_FILENAME = "test_case_inputs/input.txt"
 
-from collections import deque
 
 def read_input(filename:str):
     """
@@ -88,7 +102,7 @@ def read_input(filename:str):
         Constraint from given prompt: 0 < num_homes <= 10,000
      - max:
         integer representing the maximum number of pieces of candy the child may collect.
-        Constraint from given prompt: 0 <= max_allowed <= 1000
+        Constraint from given prompt: 0 <= max_candy_allowed <= 1000
     - pieces:
         a list of length num_homes where each entry is an integer representing the
         number of pieces given at that home.
@@ -117,7 +131,7 @@ def read_input(filename:str):
 
             lines.append(tokens[0])
 
-    # Basic structure check: confirm we have at least 2 lines at top for (num_homes and max_allowed)
+    # Basic structure check: confirm we have at least 2 lines at top for (num_homes and max_candy_allowed)
     # plus num_homes piece lines:
     if len(lines) < 2:
         raise ValueError("Input file must contain at least two lines: homes and max.")
@@ -133,14 +147,14 @@ def read_input(filename:str):
         raise ValueError(f"homes must satisfy 0 < homes <= 10000. Got: {num_homes}")
 
 
-    # Parse max_allowed (second line) and validate constraints:
+    # Parse max_candy_allowed (second line) and validate constraints:
     try:
         max_candy_allowed = int(lines[1])
     except ValueError:
         raise ValueError("Second line (max_candy_allowed) must be an integer.")
 
     if (max_candy_allowed < 0) or (max_candy_allowed > 1000):
-        raise ValueError(f"max must satisfy 0 <= max <= 1000. Got: {max_candy_allowed}")
+        raise ValueError(f"max candy allowed must satisfy 0 <= max <= 1000. Got: {max_candy_allowed}")
 
 
     # Check that the num of homes' lines matches up with num_homes given on first line:
@@ -186,7 +200,7 @@ def max_candy(filename: str = INPUT_FILENAME):
         3. Prints the expected output message
     """
 
-    # 1. Read the validated inputs for num_homes, max_allowed, pieces_per_home:
+    # 1. Read the validated inputs for num_homes, max_candy_allowed, pieces_per_home:
     num_homes, max_candy_allowed, pieces_per_home = read_input(filename)
 
     # 2. Initialize the "two pointer" sliding window into variables to hold the start/end of
@@ -198,7 +212,7 @@ def max_candy(filename: str = INPUT_FILENAME):
 
     # Define variables to help track the best solution / window found so far:
     best_candy_sum = -1
-    best_left_index = -1
+    best_left_index = float("inf")  # Set to large number so tie-break case works more naturally
     best_right_index = -1
 
     # 3. Expand window one home at a time from left to right, calculate values associated within "window"
@@ -208,7 +222,7 @@ def max_candy(filename: str = INPUT_FILENAME):
         pieces = pieces_per_home[right - 1]  # convert 1-based to zero-based index to complete algo
         current_candy_sum += pieces
 
-        # If the sum of the current window exceeds the max allowed by parents, shrink window
+        # If the sum of the current window exceeds the max candy allowed by parents, shrink window
         # from left until sum is within constraints again:
         while (current_candy_sum > max_candy_allowed) and (left <= right):
             current_candy_sum -= pieces_per_home[left -1]
@@ -235,7 +249,6 @@ def max_candy(filename: str = INPUT_FILENAME):
             f"Start at home {best_left_index} and go to home {best_right_index} getting "
             f"{best_candy_sum} pieces of candy"
         )
-
 
 
 
