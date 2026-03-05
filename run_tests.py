@@ -28,7 +28,9 @@ EXPECTED = {
     "best_window_at_end.txt": "Start at home 5 and go to home 6 getting 8 pieces of candy",
     "first_home_over_max_others_not.txt": "Start at home 2 and go to home 3 getting 2 pieces of candy",
     "all_zeros_max_positive.txt": "Start at home 1 and go to home 1 getting 0 pieces of candy",
-    "zeros_then_max_then_zeros": "Start at home 1 and go to home 2 getting 5 pieces of candy",
+    "zero_then_max_then_zeros": "Start at home 1 and go to home 2 getting 5 pieces of candy",
+    "zeros_bridge_two_possible_windows.txt": "Start at home 2 and go to home 7 getting 5 pieces of candy",
+    "max_1000_single_home_exactly_1000.txt": "Start at home 1 and go to home 1000 getting 1000 pieces of candy",
     # ---- STRESS TESTS ----
     "stress_10000_all_ones.txt": "Start at home 1 and go to home 1000 getting 1000 pieces of candy",
     "stress_10000_alternating.txt": "Start at home 2 and go to home 2 getting 1 pieces of candy",
