@@ -1,4 +1,5 @@
 import os
+import sys
 from contextlib import redirect_stdout
 from io import StringIO
 
@@ -71,4 +72,5 @@ def run_all_tests() -> int:
 
 
 if __name__ == "__main__":
-    run_all_tests()
+    exit_code = run_all_tests()
+    sys.exit(exit_code)
