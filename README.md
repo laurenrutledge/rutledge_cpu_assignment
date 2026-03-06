@@ -165,6 +165,25 @@ This implementation also relies on the assumption that all candy values are non-
 values are non-negative, we know that the prefix sums are monotonically non-decreasing. This is what makes binary 
 search on the prefix sums valid.
 
+--- 
+
+## Implementation Comparison (Python vs. C++ & OpenMP)
+
+While the two implementations above solve the same problem, the primary prioritizes simplicity and speed; the subsidiary prioritizes parallelizability. The table below summarizes how they differ in approach, complexity, and behavior:
+
+
+| Attribute | Primary (Python) | Subsidiary (C++ + OpenMP) |
+|-----------|-----------------|--------------------------|
+| **Language** | Python | C++ |
+| **Parallelism** | None (serial) | Yes — OpenMP multi-threaded |
+| **Algorithm** | Sliding window (two pointers) | Prefix sum + binary search |
+| **Time Complexity** | O(n) | O(n log n) |
+| **Space Complexity** | O(1) | O(n) |
+| **Supports Negative Candy Values** | ❌ | ❌ |
+| **Trailing Zeros** | Ignored by `>` operator | Ignored by `while` walk-back |
+| **Tie-Breaker** | Found naturally (first come) | Found by `is_better()` check |
+| **Best Use Case** | Fast, simple, memory-efficient single-threaded use | Large inputs where parallelism offsets the log-factor overhead |
+
 ---
 ## How to Run
 
@@ -251,7 +270,8 @@ g++-15 -fopenmp halloween_omp.cpp -o halloween_omp
 
 **Step 2: Run**
 
-The binary reads from `input.txt` in the same directory as the binary. Place your input file there and run:
+By default, the binary looks for openmp_implementation/input.txt: 
+
 ```bash
 ./openmp_implementation/halloween_omp
 ```
@@ -269,7 +289,7 @@ This can be run from the root directory — paths are resolved relative to the s
 
 --- 
 
-## Implementation Assumptions
+## Implementation Assumptions (Applies to BOTH Primary and Subsidiary Implementations)
 
 ### Input File Structure Format
 
