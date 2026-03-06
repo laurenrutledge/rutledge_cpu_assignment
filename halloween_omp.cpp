@@ -6,6 +6,7 @@
 #include <iostream>         // for cout, cerr
 #include <fstream>          // for file input
 #include <vector>           // for dynamic arrays 
+#include <algorithm>        // for upper_bound
 #include <omp.h>            // for OpenMP Parallelization
 
 using namespace std;
@@ -97,7 +98,7 @@ int main() {
     */
     int best_left_index = -1;  // Ensure this remains 1-based 
     int best_right_index = -1;  // Ensure this remains 1-based 
-    int best_sum = -1; 
+    int best_candy_sum = -1; 
 
     /*
     OPENMP PARALLEL REGION: 
@@ -143,10 +144,75 @@ int main() {
             Now that we found the upper bound house index, we should convert the iterator position back into the window that is wtihin the limit (inclusive)
                 - Subtract 1 because upper_bound returns the first element > limit.
             */
-           int end_exclusive = (it - prefix.begin()) - 1;
+           int end_inclusive = (it - prefix.begin()) - 1;
 
+           /*
+            Finally, ensure we found a valid window with at least one home: 
+            */
+           if (end_inclusive >= start + 1) {
+                /*
+                Compute total candy in this window.
+                Recall that prefix difference already gives candy from start to end inclusive.
+                */
+                int current_candy_sum = prefix[end_inclusive] - prefix[start]; 
+
+                /*
+                Convert the start index to a 1-based home index for the output.
+                */
+               int current_left_index = start + 1;
+
+               /*
+                end_exclusive already corresponds to the correct 1-based home, so add name for easier readability
+                */
+                int current_right_index = end_inclusive;
+
+                /*
+                Use Helper function to check if THIS window is better than the thread's current best.
+                */
+                if (is_better(current_candy_sum, current_left_index,
+                              local_best_candy_sum, local_best_left_index)) {
+
+                    local_best_candy_sum = current_candy_sum;
+                    local_best_left_index = current_left_index;
+                    local_best_right_index = current_right_index;
+                } 
            
+            }   // end: if (end_inclusive >= start + 1) 
+
+        }   // end: for loop that loops through all subsets of "home windows" that ONE thread processes 
+
+        /*
+        "Catch to Parallelisim" for this implmentation: 
+        Only one thread at a time updates the global best result. Not that this can prevent race conditions when multiple threads finish.
+        */
+       #pragma omp critical
+        {
+            if (is_better(local_best_candy_sum, local_best_left_index,
+                          best_candy_sum, best_left_index)) {
+
+                best_candy_sum = local_best_candy_sum;
+                best_left_index = local_best_left_index;
+                best_right_index = local_best_right_index;
+            }
         }
+
+    } // end "pragma unroll" block 
+
+    /*
+    OUTPUT RESULTS: 
+    - Note: if no valid window was found, print the required message: "Don't go here"
+    - Otherwise print the best sequence of homes and total candy.
+    */
+    if (best_candy_sum == -1) {
+        cout << "Don't go here" << endl;
+    } else {
+        cout << "Start at home " << best_left_index
+             << " and go to home " << best_right_index
+             << " getting " << best_candy_sum
+             << " pieces of candy" << endl;
     }
+
+
+    return 0;
 
 }
