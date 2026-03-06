@@ -7,8 +7,14 @@ the children want to maximize the amount of candy they receive!
 
 
 ### Overview
-This repository contains a solution that determines the **best consecutive sequence of homes** a child can visit in a
+This repository contains two implementations that both determine the **best consecutive sequence of homes** a child can visit in a
 neighborhood on Halloween while collecting candy **without exceeding the parents' pre-defined  maximum allowed amount**. 
+
+| Implementation | Language | Approach | Location |
+|---------------|----------|----------|----------|
+| **Primary** | Python | Sliding window — O(n) | `main.py` |
+| **Subsidiary** | C++ + OpenMP | Prefix sum + binary search — O(n log n), parallelized | `openmp_implementation/` |
+
 
 The goal is to maximize the children's total candy collected on Halloween while respecting the maximum allowed amount 
 set by the parents. 
@@ -37,9 +43,9 @@ Additional Constraints:
 
 ---
 
-## Algorithm 
+## Algorithms 
 
-### Sliding Window (Two Pointers)
+### Primary: Sliding Window (Two Pointers) -- Python
 
 The solution uses a **sliding window (two-pointer) technique**.
 
@@ -103,29 +109,94 @@ search tree, which would give a time complexity of:
 O(n log n).
 ```
 
+---
+
+### Subsidiary: Prefix Sum + Binary Search — C++ + OpenMP
+
+The subsidiary solution, provided in response to the OpenMP parallelization question, uses a **prefix sum array
+combined with binary search**.
+
+Unlike the sliding window, which carries state across iterations, this approach evaluates each starting home
+**completely independently** — making it naturally suited for parallelization with OpenMP.
+
+#### Algorithm Steps:
+
+**Serial setup (before the parallel region):**
+1. Build a prefix sum array where `prefix[i]` = total candy from homes `0` through `i-1`.
+   This allows any window sum to be computed in O(1): `sum(start..end) = prefix[end] - prefix[start]`.
+
+**Parallel region (`#pragma omp parallel`):**
+
+Each thread independently processes a subset of starting homes:
+
+1. For a given starting home, compute the maximum allowed prefix value:
+   `upper_limit = prefix[start] + max_candy`
+2. Use binary search (`upper_bound`) to find the farthest valid ending home — the last home reachable without
+   exceeding the candy limit.
+3. Walk back over any trailing zeros to find the shortest window with that sum (satisfying the tie-breaking rule).
+4. Compute the candy total for that window and update the thread's local best if it is an improvement.
+
+**Merge step (`#pragma omp critical`):**
+
+After all iterations complete, each thread merges its local best into the global best one at a time,
+using a critical section to prevent race conditions.
+
+#### Why not parallelize the sliding window directly?
+The sliding window carries state (left pointer, running sum) across iterations. Parallelizing it directly would
+produce incorrect results because threads would overwrite each other's state. The prefix sum approach avoids this
+entirely since every starting home is evaluated independently.
+
+#### Time Complexity:
+```text
+O(n log n)
+```
+
+Each of the n starting homes performs a binary search over the prefix array — O(log n) per iteration.
+
+#### Space Complexity:
+```text
+O(n)
+```
+
+The prefix sum array requires O(n) additional memory.
+
+#### Note on Negative Candy Values
+This implementation also relies on the assumption that all candy values are non-negative. Since all candy 
+values are non-negative, we know that the prefix sums are monotonically non-decreasing. This is what makes binary 
+search on the prefix sums valid.
 
 ---
 ## How to Run
 
 ### Requirements
-    •	Python 3.9+
-    •   No external dependencies - standard library only
+
+**Python (Primary Implementation):**
+    - Python 3.9+
+    - No external dependencies — standard library only
+
+**C++ OpenMP (Subsidiary Implementation):**
+    - g++ with OpenMP support (e.g. `g++-15`)
+    - OpenMP library (`-fopenmp` flag)
 
 ### File Structure
 
 ```text
 rutledge_cpu_assignment/
 │
-├── main.py                   # Implementation of the sliding window algorithm
-├── run_tests.py              # Automated test runner
-├── generate_stress_tests.py  # Script to generate large stress test inputs (to be run in run_tests.py)
-├── README.md                 # Project documentation containing instructions for running this solution and assumptions
-├── ComputeAssignment.pdf     # Original assignment prompt and documentation
+├── main.py                     # Primary implementation — sliding window algorithm
+├── run_tests.py                # Automated test runner for the Python implementation
+├── generate_stress_tests.py    # Script to generate large stress test inputs
+├── README.md                   # Project documentation
+├── ComputeAssignment.pdf       # Original assignment prompt
 │
-└── test_case_inputs/         # Directory containing input test files
+├── test_case_inputs/           # Directory containing all test input files
+│
+└── openmp_implementation/      # Subsidiary C++ + OpenMP implementation
+    ├── halloween_omp.cpp        # C++ OpenMP implementation
+    └── run_cpp_tests.py         # Automated test runner for the C++ implementation
 ```
 
-### Running the Program
+### Running the Primary Python Implementation
 
 Run the algorithm with:
 
@@ -161,6 +232,40 @@ python run_tests.py
 ```
 
 to execute the full test suite.
+
+
+### Running the Subsidiary C++ OpenMP Implementation
+
+**Step 1: Compile**
+
+From the root directory:
+```bash
+g++-15 -fopenmp openmp_implementation/halloween_omp.cpp -o openmp_implementation/halloween_omp
+```
+
+Or from inside the `openmp_implementation/` folder:
+```bash
+cd openmp_implementation
+g++-15 -fopenmp halloween_omp.cpp -o halloween_omp
+```
+
+**Step 2: Run**
+
+The binary reads from `input.txt` in the same directory as the binary. Place your input file there and run:
+```bash
+./openmp_implementation/halloween_omp
+```
+
+### Running the Subsidiary C++ OpenMP Test Suite
+
+Make sure the binary is compiled first (see above), then:
+
+```bash
+python openmp_implementation/run_cpp_tests.py
+```
+
+This can be run from the root directory — paths are resolved relative to the script's own location automatically.
+
 
 --- 
 
@@ -477,7 +582,8 @@ also start at `1`, it is encountered first and therefore kept by the implementat
 The following test cases were designed to validate both correctness and edge-case handling, including boundary 
 conditions, tie-breaking rules, zero values, and algorithmic behavior of the sliding window implementation.
 
-All test input files are located in the `test_case_inputs/` directory and executed via `run_tests.py`.
+All test input files are located in the `test_case_inputs/` directory and executed via `run_tests.py`. Both test 
+suites (`run_tests.py` and `openmp_implementation/run_cpp_tests.py`) use the same test cases and expected outputs.
 
 | Filename | Expected Output | Purpose / Edge Case Covered                                                                                 |
 |---------|----------------|-------------------------------------------------------------------------------------------------------------|
