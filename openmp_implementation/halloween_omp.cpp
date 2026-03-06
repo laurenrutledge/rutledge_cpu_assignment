@@ -40,7 +40,7 @@
  *       "Don't go here"
  *
  * Compile: g++-15 -fopenmp openmp_implementation/halloween_omp.cpp -o openmp_implementation/halloween_omp
- * Run: python openmp_implementation/run_cpp_tests.py  
+ * Run: ./openmp_implementation/halloween_omp
  */
 
 #include <iostream>         // for cout, cerr
@@ -97,17 +97,34 @@ static int is_better(int candidate_sum, int candidate_start, int current_sum, in
 *   5. Prints the best valid candy window, or "Don't go here" if none exists
 */
 
-int main() {
+int main(int argc, char* argv[]) {
 
+
+    /* * Determine which file to open:
+     * If argc > 1, it means the user provided a file path (e.g., from the test runner: run_cpp_tests.py).
+     * Otherwise, use the specific default path (if testing with this file only and NOT the test runner)
+     */
+    string filename = (argc > 1) ? argv[1] : "openmp_implementation/input.txt";
+    
+    ifstream fin(filename);
+
+    // Check that the file opened successfully
+    if (!fin) {
+        // Use cerr for errors so they don't get mixed into your captured test output
+        cerr << "Could not open input file: " << filename << endl;
+        return 1;
+    }
+
+    /*
     // Open the input file
-    ifstream fin("input.txt");
+    ifstream fin("openmp_implementation/input.txt");
 
     // Check that the file opened successfully
     if (!fin) {
         cerr << "Could not open input file: input.txt" << endl;
         return 1;
     }
-
+    */ 
     // Read the total number of homes in the neighborhood (the number of lines we should expect in file - 2) 
     int num_homes;
     fin >> num_homes;
@@ -224,9 +241,8 @@ int main() {
             Walk back over trailing zeros so we return the shortest valid window to satisfy the unique tie-breaking case: 
             Same Sum, prefer the smallest start. 
             If same sum and same start, prefer the smallest end index 
-            
+            This matches the python "if sum > best_sum" behavior 
             */
-
             while (end_inclusive > start + 1 && pieces[end_inclusive - 1] == 0) {
                 end_inclusive--;
             }   // end while loop 

@@ -20,10 +20,9 @@ How it works
        - an expected output string stored in the `EXPECTED` dictionary.
 
 2. For each test:
-       - The input file is copied to `input.txt` (the file the binary reads from).
+       - The path to the test file is passed as a command-line argument to the binary.
        - The compiled `halloween_omp` binary is invoked as a subprocess.
        - Its stdout is captured and compared against the expected output.
-       - The temporary `input.txt` is cleaned up after each test.
 
 3. Each test prints either:
        [PASS] filename
@@ -41,29 +40,26 @@ Important Notes
 
 Usage
 -----
-    python run_cpp_tests.py
+    python openmp_implementation/run_cpp_tests.py
 
 The script exits with:
-    0 → all tests passed
-    1 → one or more tests failed
+    0 --> all tests passed
+    1 --> one or more tests failed
 """
 
 import os
 import sys
-import shutil
 import subprocess
 
+# Determine the absolute path to the directory containing this script 
 # Always resolve paths relative to this script's location
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Directory where all test input files live
+# Directory where all test input files live (in this repository, that's one level up from this script)
 TEST_DIR   = os.path.join(SCRIPT_DIR, "..", "test_case_inputs")
 
-# Path to the compiled C++ OpenMP binary
+# Path to the compiled C++ OpenMP binary located in THIS script's directory
 CPP_BINARY = os.path.join(SCRIPT_DIR, "halloween_omp")
-
-# Temporary input file the C++ binary reads from
-CPP_INPUT_FILE = os.path.join(SCRIPT_DIR, "input.txt")
 
 
 # Map: filename -> expected exact output (must match character-for-character)
@@ -97,26 +93,31 @@ EXPECTED = {
 
 def run_one_test(input_path: str) -> str:
     """
-    Copies input_path to input.txt, runs the halloween_omp binary,
-    captures its stdout, and cleans up input.txt.
+    Runs the halloween_omp binary and passes the input_path 
+    directly as a command line argument.
     """
-    shutil.copyfile(input_path, CPP_INPUT_FILE)
 
     try:
+        # We MUST pass input_path in the list so C++ can see it in argv[1]
         result = subprocess.run(
-            [CPP_BINARY],
+            [CPP_BINARY, input_path],
             capture_output=True,
             text=True,
             timeout=10,      # If test gets stuck, this counts as a fail
-            cwd=SCRIPT_DIR    # run the binary from its own folder so it finds input.txt
-
         )
-        return result.stdout.strip()
-    finally:
-        # Clean up the temporary input.txt even if the binary crashes!
-        if os.path.exists(CPP_INPUT_FILE):
-            os.remove(CPP_INPUT_FILE)
 
+        # If the program printed an error to stderr, it's helpful to know
+        if result.stderr:
+            print(f"  Debug Stderr: {result.stderr.strip()}")
+
+        return result.stdout.strip()
+    
+    except subprocess.TimeoutExpired:
+        return "Error: Test timed out after 10 seconds."
+    
+    except Exception as e:
+        return f"Error running binary: {str(e)}"
+    
 
 def run_all_tests() -> int:
     """
@@ -136,6 +137,7 @@ def run_all_tests() -> int:
     for filename in sorted(EXPECTED.keys()):
         input_path = os.path.join(TEST_DIR, filename)
 
+        # Skip the test if the actual text file is missing from the input directory
         if not os.path.exists(input_path):
             print(f"[SKIP] {filename} (file not found)")
             continue
