@@ -10,13 +10,13 @@ the children want to maximize the amount of candy they receive!
 This repository contains a solution that determines the **best consecutive sequence of homes** a child can visit in a
 neighborhood on Halloween while collecting candy **without exceeding the parents' pre-defined  maximum allowed amount**. 
 
-The goal is to maximize the children's total candy collected on Halloween while respecting the maximum allowed amount.
+The goal is to maximize the children's total candy collected on Halloween while respecting the maximum allowed amount 
 set by the parents. 
 
 If multiple valid sequences (subsections of consecutive houses in one neighborhood) achieve the same maximum sum of
-of candy, the sequence with the **smallest starting home index** is chosen. 
+candy, the sequence with the **smallest starting home index** is chosen. 
 
-If no valid sequence of houses in the neighborhood exist, the program prints: 
+If no valid sequence of houses in the neighborhood exists
 
 ```text
 Don't go here
@@ -26,14 +26,14 @@ Don't go here
 ### Problem Statement
 Given a neighborhood of homes where each home hands out a fixed number of candy pieces, determine the **contiguous 
 sequence of homes** a child should visit such that:
-•	The total candy collected does not exceed the parent-set maximum.
-•	The total candy collected by the children is as large as possible.
-•	If multiple sequences tie on total candy, the one starting at the lowest-numbered (index) home is chosen.
+- The total candy collected does not exceed the parent-set maximum.
+- The total candy collected is as large as possible.
+- If multiple sequences tie on total candy, the one starting at the lowest-numbered home is chosen.
 
 Additional Constraints: 
-•   Children must visit every home in the chosen range.
-•   Homes must be visited in order.
-•   Children cannot skip homes or "discard candy".
+- Children must visit every home in the chosen range.
+- Homes must be visited in order.
+- Children cannot skip homes or "discard candy".
 
 ---
 
@@ -79,7 +79,9 @@ Each house is processed at most twice:
 O(1)
 ```
 
-The algorithm uses only a constant amount of additional memory (we only store pointers for the first and last indicies of the current window). .
+The algorithm uses only a constant amount of additional memory, storing a small fixed number of variables such as the 
+window pointers, running sum, and best window information.
+
 
 #### Negative Candy Values
 This algorithm relies on the assumption that all candy values are non-negative.
@@ -201,6 +203,35 @@ An example input text file may contain the contents:
 - 5 homes in the neighborhood
 - A maximum allowed candy total of 10
 - Candy distribution per home (starting at home 1) `[2, 4, 3, 2, 1]`
+
+#### Invalid Input Handling
+
+This implementation performs **strict input validation** before running the sliding window algorithm.
+
+If the input file violates the expected format or value constraints (constraints are noted in the next section), the 
+program raises a `ValueError` with a descriptive message.
+
+Specifically, the input file must satisfy all of the following conditions:
+
+| Validation Rule | Behavior |
+|-----------------|----------|
+| Exactly one neighborhood per file | The file must describe exactly one neighborhood instance. |
+| Minimum required structure | The file must contain at least two lines: one for `number_of_homes` and one for `maximum_candy_allowed`. |
+| Exact line count | If the first line specifies `n` homes, then the file must contain exactly `2 + n` total lines. |
+| One integer per line | Each line must contain exactly one integer value. Multiple integers on the same line are not allowed. |
+| No blank lines | Blank or empty lines are rejected. |
+| Leading/trailing whitespace allowed | Whitespace is allowed only if the line still contains exactly one integer after stripping. |
+| First line constraint | `number_of_homes` must be an integer satisfying `0 < homes ≤ 10,000`. |
+| Second line constraint | `maximum_candy_allowed` must be an integer satisfying `0 ≤ max ≤ 1,000`. |
+| Home candy constraints | Each home candy value must be an integer satisfying `0 ≤ pieces ≤ 1,000`. |
+
+Examples of invalid input include:
+
+- blank lines
+- non-integer values
+- multiple integers on one line
+- too few or too many house lines
+- values outside the allowed ranges
 
 
 ### Output Format Structure
@@ -343,15 +374,13 @@ index**. Or more specifically:
 | Secondary behavior | If two windows have the same start and sum, the algorithm keeps the **first encountered window** while scanning left-to-right. |
 
 
-A perfect example of where you may see this could look like the below example:
-
-If houses give out [candy]: 
-
+For example, if houses give out [candy]:
 ```text
 [2, 3, 2, 3]
 max = 5
 ```
-Valid Windows would therefore include: 
+
+then the following windows are all valid and achieve the same best sum:
 ```text
 1-2
 2-3
@@ -370,17 +399,17 @@ because it is the first optimal window discovered.
 - the same best sum, and
 - the same starting home index
 
-This can happen when leading or trailing homes contribute `0` pieces of candy.
+This can happen when trailing (or leading) homes contribute `0` pieces of candy.
 
 In these cases, this implementation keeps the **first such window encountered while scanning left-to-right**, which 
-corresponds to the **smallest ending home index** among windows tied on both start and sum. This design choice was
-chosen because Halloween is equally as much about showing off your costume as it is collecting candy! That said, it 
-is assumed that if the child has yet to collect any candy, and there exist a few houses at the end of the road that will
+corresponds to the **smallest ending home index** among windows tied on both starting index and sum. This design choice 
+was chosen because Halloween is equally as much about showing off your costume as it is collecting candy! That said, it 
+is assumed that if the child has yet to collect any candy, and there exists a few houses at the end of the road that will
 still give out candy within the allowed_maximum, then the child will want to stop at the houses that don't give out candy
-to show off their costume before getting to houses IN THE SAME NEIGHBORHOOD that will give out at least one piece. 
+to show off their costume before getting to the houses IN THE SAME NEIGHBORHOOD that will give out at least one piece. 
 
 At the same time, if no houses in the neighborhood give out candy and it is pre-known to the children, then it is assumed
-that the children will only want to show off their costume at one house before heading home to eat the candy at their own 
+that the children will only want to show off their costume to one house before heading home to eat the candy at their own 
 house! 
 
 Below are two examples that fall within this "unique tie-breaking case" category: 
@@ -437,8 +466,10 @@ According to the assignment's tie-breaking rule and the assumptions noted above,
 Start at home 1 and go to home 3 getting 5 pieces of candy
 ```
 
-This is because it is the 1-3 window that has the smallest starting home index, and the left-most right index. The
-left-most right index is what is selected because the window 1-3 will get noticed prior than window 1-4, etc.
+This is because the `1-3` window has the smallest starting home index among all optimal windows. Among the windows that 
+also start at `1`, it is encountered first and therefore kept by the implementation.
+
+---
 
 ## Test Cases
 
