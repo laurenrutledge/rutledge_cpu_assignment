@@ -39,7 +39,8 @@
  *     - If no valid non-empty range exists, the output is:
  *       "Don't go here"
  *
- * Compile: g++-15 -fopenmp halloween_omp.cpp -o halloween_omp
+ * Compile: g++-15 -fopenmp openmp_implementation/halloween_omp.cpp -o openmp_implementation/halloween_omp
+ * Run: python openmp_implementation/run_cpp_tests.py  
  */
 
 #include <iostream>         // for cout, cerr

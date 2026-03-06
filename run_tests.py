@@ -45,20 +45,25 @@ Run the test suite from the command line:
     python test_runner.py
 
 The script exits with:
-    0 → all tests passed
-    1 → one or more tests failed
+    0 -->  all tests passed
+    1 -->  one or more tests failed
 """
+
+
 
 import os
 import sys
 from contextlib import redirect_stdout
 from io import StringIO
 
-# Import the function to be tested
+
+# Import the function to be tested from the main.py file 
 from main import max_candy
+
 
 # File name that all test cases are stored in
 TEST_DIR = "test_case_inputs"
+
 
 # Map: filename -> expected exact output (must match character-for-character)
 EXPECTED = {
@@ -88,33 +93,47 @@ EXPECTED = {
     "stress_10000_alternating.txt": "Start at home 2 and go to home 2 getting 1 pieces of candy",
 }
 
+
+
 def run_one_test(input_path: str) -> str:
     """
     Runs max_candy(input_path) for one test case and captures what it prints.
     """
+
+    # Create a temporary in-memory object that is "file-like" to catch what we later will print
     buffer = StringIO()
 
+    # Now temporarily swap out sys.stdout with the buffer so print() calls goes to buffer
     with redirect_stdout(buffer):
         max_candy(input_path)
 
+    # Retrieve and return string from buffer to print to terminal
     return buffer.getvalue().strip()
+
+
 
 def run_all_tests() -> int:
     """
-        Runs all tests in EXPECTED. Prints a PASS/FAIL report.
+        Runs all tests in EXPECTED. Uses run_one_test function to do so for each test 
+        After each test, this function prints a PASS/FAIL report. Then, it: 
         Returns an exit code: 0 if all pass, 1 otherwise.
         """
 
     failures = 0
 
+    # Run tests in alphabetical order (easier for readability during testing)
     for filename in sorted(EXPECTED.keys()):
         input_path = os.path.join(TEST_DIR, filename)
 
+        # Confirm the test file for THIS test actually exists
         if not os.path.exists(input_path):
             print(f"[SKIP] {filename} (file not found at {input_path})")
             continue
-
+        
+        # Expected takes from the mapping above 
         expected = EXPECTED[filename].strip()
+
+        # Actual uses the function above to see what the current code would output for the file
         actual = run_one_test(input_path).strip()
 
         if actual == expected:
@@ -122,6 +141,8 @@ def run_all_tests() -> int:
         else:
             failures += 1
             print(f"[FAIL] {filename}")
+
+            # Use !r to force output to show the actual and expected representation (using quotes)
             print(f"  expected: {expected!r}")
             print(f"  actual:   {actual!r}")
 

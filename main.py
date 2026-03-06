@@ -11,7 +11,7 @@ the child’s maximum allowed candy limit.
 
 Approach:
     This implementation uses a sliding window / two-pointer technique to find the best valid contiguous range of homes
-    in O(n) time, where n is the number of homes i na neighborhood. This approach works because all candy values are
+    in O(n) time, where n is the number of homes in a neighborhood. This approach works because all candy values are
     assumed to be non-negative (as described further in the Implementation Assumptions Section below)
 
 Input format assumptions:
@@ -151,6 +151,9 @@ def read_input(filename:str):
     # Return validated values for num_homes, max_candy_allowed, pieces_per_home
     return num_homes, max_candy_allowed, pieces_per_home
 
+
+
+
 def max_candy(filename: str = INPUT_FILENAME):
     """
     This function implements the following three tasks:
@@ -172,8 +175,8 @@ def max_candy(filename: str = INPUT_FILENAME):
     # window. The current_sum holds the total candy pieces for the current window [left..right].
     current_candy_sum = 0
 
-    # Define left: the 1-based starting index for first home in defined window:
-    left = 1
+    # Define left: do so as a 0 based starting string that we will change back to 1-based after main algo
+    left = 0
 
     # Define variables to help track the best solution / window found so far:
     best_candy_sum = -1
@@ -181,16 +184,16 @@ def max_candy(filename: str = INPUT_FILENAME):
     best_right_index = -1
 
     # 3. Expand window one home at a time from left to right, calculate values associated within "window"
-    for right in range(1, num_homes + 1):
+    for right in range(0, num_homes):
 
         # Add the candy from the new rightmost home into the current window sum.
-        pieces = pieces_per_home[right - 1]  # Convert 1-based home index to 0-based list index.
+        pieces = pieces_per_home[right]  # Use 0-based index, convert 1-based home index later
         current_candy_sum += pieces
 
         # If the sum of the current window exceeds the max candy allowed by parents, shrink window
         # from left until sum is within constraints again:
         while (current_candy_sum > max_candy_allowed) and (left <= right):
-            current_candy_sum -= pieces_per_home[left -1]
+            current_candy_sum -= pieces_per_home[left]
             left += 1  # Shrink the window from the left by excluding one home.
 
         # If we have a non-empty valid window, compare it to current best. Note that a non-empty
@@ -210,8 +213,9 @@ def max_candy(filename: str = INPUT_FILENAME):
     if best_candy_sum == -1:
         print("Don't go here")
     else:
+        # When printing, make sure to convert back to 1-based indexing, as the problem asks
         print(
-            f"Start at home {best_left_index} and go to home {best_right_index} getting "
+            f"Start at home {best_left_index + 1} and go to home {best_right_index + 1} getting "
             f"{best_candy_sum} pieces of candy"
         )
 
