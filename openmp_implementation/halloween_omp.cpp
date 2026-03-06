@@ -1,7 +1,46 @@
-// g++-15 -fopenmp halloween_omp.cpp -o halloween_omp
-
-// Subsidiary implementation using OpenMP for multi-core execution.
-// Main implementation is written in Python.
+/*
+ * File: halloween_omp.cpp
+ * Lauren Rutledge
+ * March 5, 2026
+ *
+ * This file contains a subsidiary implementation of the "Halloween candy neighborhood problem"
+ * described in the README. The primary implementation is written in Python (main.py). This
+ * implementation parallelizes the solution using OpenMP for multi-core execution, as described
+ * in the subsidiary question of the assignment.
+ *
+ * Approach:
+ *     This implementation uses a prefix sum array combined with binary search (upper_bound)
+ *     to find the best valid contiguous range of homes in O(n log n) time. Unlike the serial
+ *     sliding-window solution used in the Python implementation, this approach allows each
+ *     starting home to be evaluated independently, making it well-suited for parallelization
+ *     with OpenMP. Each thread processes a subset of starting homes, maintains a local best
+ *     result, and merges it into the global best using a critical section.
+ *
+ * Input format assumptions:
+ *     - The file represents exactly one neighborhood.
+ *     - Line 1 contains the number of homes, `num_homes`.
+ *     - Line 2 contains the maximum allowed candy, `max_candy`.
+ *     - Each remaining line contains exactly one integer representing the number
+ *       of candy pieces available at one home.
+ *
+ * Data constraints from the prompt:
+ *     - 0 < homes <= 10000
+ *     - 0 <= max_candy <= 1000
+ *     - 0 <= pieces <= 1000 for each home
+ *
+ * Important assumptions:
+ *     - Candy counts are non-negative, which ensures prefix sums are monotonically
+ *       non-decreasing and binary search is valid.
+ *     - Homes must be visited in their given order.
+ *     - The child must visit a consecutive block of one or more homes.
+ *     - The child must take all candy from each visited home.
+ *     - If multiple valid ranges produce the same best candy total, the range
+ *       with the smallest starting home index is chosen.
+ *     - If no valid non-empty range exists, the output is:
+ *       "Don't go here"
+ *
+ * Compile: g++-15 -fopenmp halloween_omp.cpp -o halloween_omp
+ */
 
 #include <iostream>         // for cout, cerr
 #include <fstream>          // for file input
@@ -20,26 +59,42 @@ using namespace std;
 * A window is considered better than the alternative (candidiate vs. current) if:
 *   1. It contains more total candy, OR
 *   2. It contains the same amount of candy but starts at an earlier home (this follows the tie-breaking rule from the problem statement).
+* 
+* The function returns: 
+*   - 1: If the candidate window is better than the current window (1 = True)
+*   - 0: If the candidate window is NOT better than the current window (0 = False)
 */
+
 static int is_better(int candidate_sum, int candidate_start, int current_sum, int current_start) {
     
     // Candidate has more candy than the current sum, so candidate window / sum is "automatically better"
-    // If candidate window is preferred --> RETURN FALSE 
+    // If candidate window is preferred --> RETURN TRUE
     if (candidate_sum > current_sum) {
         return 1; 
     }
     // Candidate has same candy as current sum, but candidate starting index is smaller than the current starting index,
-    //  so candidate window is preferred. If candidate window is preferred --> RETURN FALSE 
+    //  so candidate window is preferred. If candidate window is preferred --> RETURN TRUE 
     if (candidate_sum == current_sum && candidate_start < current_start) {
         return 1; 
     }
 
     // If neither of the above are true, then the current window is better than THIS candidate's window of houses. 
-    // If current window is preferred --> RETURN TRUE 
+    // If current window is preferred --> RETURN FALSE
     return 0; 
 }
 
 
+
+/*
+* Main Function
+*
+* This function:
+*   1. Reads the input file (num_homes, max_candy, and candy values per home)
+*   2. Builds a prefix sum array for O(1) range sum queries
+*   3. Runs a parallelized search across all starting homes using OpenMP
+*   4. Merges each thread's local best into the global best via a critical section
+*   5. Prints the best valid candy window, or "Don't go here" if none exists
+*/
 
 int main() {
 
@@ -63,15 +118,13 @@ int main() {
 
     /*
     Read the candy amounts each home gives out
-
     pieces[i] = number of pieces of candy given at home i. Store them as 0-based index
     */
-
-
     vector<int> pieces(num_homes); 
     for (int i = 0; i < num_homes; i++) {
         fin >> pieces[i]; 
     }
+
 
     /*
     Build the Prefix Sum Array: 
@@ -118,10 +171,30 @@ int main() {
         int local_best_candy_sum = -1; 
 
         /*
-        Set up distribution of the loop iterations across various threads. 
-            - Each thread wlll process a subset of windows starting form the same starting homes.
+        Pragma Omp is what parallelizes this loop: 
+         - the line tells OpenMP to divide the loop iterations among the available threads so that different starting homes are 
+         processed in parallel
         */
         #pragma omp for
+
+        /*
+                OpenMP Parrallel Loop: 
+
+        Each iteration of this loop evaluates ALL windows / candidates per a different possible starting home 
+        for the trick-or-treat route. 
+
+        For a given starting home, start, ONE thread: 
+            1. Computes the maximum allowed prefix sum: 
+                - prefix[start] + max_candy) 
+            2. Uses binary search (upper_bound) to find the last valid ending home that can be visited without exceeding 
+             the candy limit -- last valid home meaning the last home in the sequence we can visit wtihout candy exceeding the total limit
+            3. Computes the candy total for the window with the last valid ending home that can be reached without exceeding the limit
+            4. The thread updates its thread-local BEST WINDOW if this window is better than the previously stored best window 
+
+        Because each starting home is evaluated independently, different starting homes can be processed by different threads without 
+         interfering with one another. 
+        */
+
         for (int start = 0; start < num_homes; start++) {
 
             /*
@@ -134,8 +207,8 @@ int main() {
             int upper_candy_limit = prefix[start] + max_candy; 
 
             /*
-            Now that we have the upper candy limit for THIS starting home, we can use binary search to find the first prefix value that is 
-            greater than the limit (we are searching for the upper_bound). 
+            Now that we have the upper candy limit for THIS starting home, use binary search to find the first prefix value that is 
+            greater than the max_candy limit (we are searching for the upper_bound). 
                 - This allows us to determine the farthest valid ending home.
             */
            auto it = upper_bound(prefix.begin() + start + 1, prefix.end(), upper_candy_limit);
@@ -146,6 +219,17 @@ int main() {
             */
            int end_inclusive = (it - prefix.begin()) - 1;
 
+            /*
+            Walk back over trailing zeros so we return the shortest valid window to satisfy the unique tie-breaking case: 
+            Same Sum, prefer the smallest start. 
+            If same sum and same start, prefer the smallest end index 
+            
+            */
+
+            while (end_inclusive > start + 1 && pieces[end_inclusive - 1] == 0) {
+                end_inclusive--;
+            }   // end while loop 
+            
            /*
             Finally, ensure we found a valid window with at least one home: 
             */
@@ -162,7 +246,7 @@ int main() {
                int current_left_index = start + 1;
 
                /*
-                end_exclusive already corresponds to the correct 1-based home, so add name for easier readability
+                end_inclusive already corresponds to the correct 1-based home, so add name for easier readability
                 */
                 int current_right_index = end_inclusive;
 
@@ -180,10 +264,11 @@ int main() {
             }   // end: if (end_inclusive >= start + 1) 
 
         }   // end: for loop that loops through all subsets of "home windows" that ONE thread processes 
-
+        
         /*
-        "Catch to Parallelisim" for this implmentation: 
-        Only one thread at a time updates the global best result. Not that this can prevent race conditions when multiple threads finish.
+        * Critical section:
+        * Only one thread at a time may update the global best result.
+        * This prevents race conditions during the merge step.
         */
        #pragma omp critical
         {
@@ -196,7 +281,7 @@ int main() {
             }
         }
 
-    } // end "pragma unroll" block 
+    }   // end pragma omp parallel
 
     /*
     OUTPUT RESULTS: 
@@ -212,6 +297,7 @@ int main() {
              << " pieces of candy" << endl;
     }
 
+    fin.close(); 
 
     return 0;
 
