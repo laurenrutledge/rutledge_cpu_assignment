@@ -507,3 +507,13 @@ All test input files are located in the `test_case_inputs/` directory and execut
 |---------|----------------|---------|
 | `stress_10000_all_ones.txt` | `Start at home 1 and go to home 1000 getting 1000 pieces of candy` | Tests performance with the maximum allowed number of homes (10,000) and verifies linear-time scaling. |
 | `stress_10000_alternating.txt` | `Start at home 2 and go to home 2 getting 1 pieces of candy` | Stress test with alternating values to ensure the sliding window repeatedly expands and shrinks efficiently. |
+
+
+---
+
+## Author
+
+Lauren Rutledge  
+March 2026
+
+Repository created for the Compute Assignment evaluation.
