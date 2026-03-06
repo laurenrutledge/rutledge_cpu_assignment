@@ -1,3 +1,54 @@
+"""
+run_tests.py
+
+Lauren Rutledge
+March 5, 2026
+
+Purpose
+-------
+This script serves as an automated test harness for the `max_candy` function
+implemented in `main.py`.
+
+It runs a collection of predefined input files stored in the
+`test_case_inputs/` directory and verifies that the program output matches
+the expected results exactly.
+
+How it works
+------------
+1. Each test case is defined by:
+       - an input file in `test_case_inputs/`
+       - an expected output string stored in the `EXPECTED` dictionary.
+
+2. The function `max_candy()` is executed for each input file.
+
+3. Standard output from the function is captured using
+   `contextlib.redirect_stdout` and compared against the expected output.
+
+4. Each test prints either:
+       [PASS] filename
+       [FAIL] filename
+
+5. A final summary reports whether all tests passed.
+
+Important Notes
+---------------
+- Output comparison is **character-for-character**, meaning spacing,
+  punctuation, and wording must match the expected string exactly.
+
+- Stress tests are included to verify correctness and performance for
+  larger inputs (e.g., 10,000 homes).
+
+Usage
+-----
+Run the test suite from the command line:
+
+    python test_runner.py
+
+The script exits with:
+    0 → all tests passed
+    1 → one or more tests failed
+"""
+
 import os
 import sys
 from contextlib import redirect_stdout

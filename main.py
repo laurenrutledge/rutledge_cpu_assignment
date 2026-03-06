@@ -1,93 +1,51 @@
-
 """
-# Implementation Assumptions:
-- Regarding the structure of the file:
-    - The file represents exactly one neighborhood: where the number of lines
-    containing an integer from the third line onwards (the number of "homes" lines)
-    is exactly the number of homes in the neighborhood
-        - So the expected total lines are: 2 + homes
-        - If there are only two lines given in the input (no homes lines), then a
-        Value Error will be raised
-    - Each value appears on its own line: one integer on one line represents the
-    number of pieces of candy handed out at THAT ONE house. If there is more than
-    one integer on a line in the input.txt, a Value Error will be raised.
-    - Lines may contain leading or trailing whitespace, but must contain exactly
-    one integer.
+File: main.py
 
-- Regarding the Data Types:
-    - We assume every value can be parsed as an integer in its numerical format
+Lauren Rutledge
+March 5, 2026
 
-- Regarding Value Ranges for the Stored Data Values:
-    - From the prompt:
-        Variable                 | Constraint
-           homes                 |	0 < homes ≤ 10000
-           max_candy_allowed	 |  0 ≤ max ≤ 1000
-           pieces	             |  0 ≤ pieces ≤ 1000
-    This also confirms that **All candy values are non-negative** (which is why the
-    sliding window technique works
-    - IF negative numbers were allowed, the algorithm used here would break
 
-- Regarding Ordering of the Homes:
-    - Homes in the home lines are ordered as: 1, 2, 3, ... , n
-        - The homes cannot be re-ordered and as such, the sequence of the homes remain
-        consecutive.
-        - This means that a valid window would be: homes 3 through 7.
-        - An INVALID window would be: homes 1, 4, 6, etc.
+This file contains an implementation that solves the "Halloween candy neighborhood problem" described in the README by
+finding the consecutive sequence of one or more homes that yields the largest possible amount of candy without exceeding
+the child’s maximum allowed candy limit.
 
-- Regarding "Child Behavior Rules":
-    - From our prompted given constraints, each child must:
-        1. Visit homes in order in their neighborhood
-        2. Visit every home in their chosen, outputted range
-        3. Take all pieces of candy offered at each house they go to
-        4. The child cannot discard candy in any form if it is true that they visited
-        a house that gave candy.
+Approach:
+    This implementation uses a sliding window / two-pointer technique to find the best valid contiguous range of homes
+    in O(n) time, where n is the number of homes i na neighborhood. This approach works because all candy values are
+    assumed to be non-negative (as described further in the Implementation Assumptions Section below)
 
-        - This confirms that the sum of each child's candy gathered (at the end of visiting
-        all houses) is: sum(pieces[i..j])
+Input format assumptions:
+    - The file represents exactly one neighborhood.
+    - Line 1 contains the number of homes, `homes`.
+    - Line 2 contains the maximum allowed candy, `max_candy_allowed`.
+    - Each remaining line contains exactly one integer representing the number
+      of candy pieces available at one home.
+    - Leading and trailing whitespace are allowed, but blank lines are not.
+    - Each line must contain exactly one integer value.
 
-- Regarding Output Uniqueness:
-    - The given prompt specifies the "tie breaking rule":
-        - If multiple sequences have the same best sum, choose the one with the smallest
-        starting home / home index (e.g., when trailing homes give 0 candy).
-- Additional notes on ties involving zeros:
-    - It is possible for multiple windows to have the same best sum and the same starting
-      index. In these cases, this implementation keeps the first such window encountered
-      while scanning left-to-right, which corresponds to the smallest ending home index
-      among those tied windows with the same start and sum.
-    - Example 1:
-        If house 1 gives the maximum allowed candy and houses 2–5 give 0 candy,
-        multiple windows produce the same sum (homes 1–1, 1–2, 1–3, etc.).
-        The implementation keeps the first one encountered, so the output is:
-        visiting only house 1.
-    - Example 2:
-        If houses 1–2 give 0 candy, house 3 gives the maximum candy, and the rest
-        give 0 candy, several windows reach the same best sum (3–3, 2–3, 1–3, etc.).
-        The prompt’s tie-breaking rule selects the window with the smallest starting
-        index, so the output is visiting homes 1–3.
+Data constraints from the prompt:
+    - 0 < homes <= 10000
+    - 0 <= max_candy_allowed <= 1000
+    - 0 <= pieces <= 1000 for each home
 
-- Regarding the minimum window size:
-    - The prompt gives us that the output must be "one or more consecutive homes"
-        - The window size must be >= 1, OR, a printed message: "Don't go here” will
-        be outputted
-        - We CANNOT return an empty window
+Important assumptions:
+** SEE THE FULL LIST OF DETAILED INSTRUCTIONS IN THE README FILE **
+    - Candy counts are non-negative. This is required for the sliding window
+      technique to be correct.
+    - Homes must be visited in their given order.
+    - The child must visit a consecutive block of one or more homes.
+    - The child must take all candy from each visited home.
+    - If multiple valid ranges produce the same best candy total, the range
+      with the smallest starting home index is chosen.
+    - If no valid non-empty range exists, the output is:
+      "Don't go here"
 
-- Regarding the Failure Case:
-    - The failure case exists when the input does NOT show a sequence of >= 1 homes where
-    the sum <= max.
-        - If there are 3 homes in the sequence, the max is 2, and all three of the homes' give
-        out 3+ pieces of candy, then the children cannot visit ANY home.
-        - If a failure case is inputted, the output will be: "Don't go here”
-
-- Implicit Algorithm Assumptions:
-    - Since we are assuming that pieces will always be >= 0, we are able to use the "sliding
-    window technique" that achieves O(n).
-    - If "negative pieces of candy" were allowed to be handed out at each house, the sliding
-    technique could no longer be used. Instead, we would need to conduct a prefix sum on a
-    built balanced tree, which would take O(nlogn)
+If negative candy values were allowed, this O(n) sliding window approach would
+no longer be valid.
 """
 
 # ------------------------------------------------------------
-# Project configuration: change this ONE line to swap inputs.
+# Project configuration: change this ONE line to swap default inputs.
 # ------------------------------------------------------------
 INPUT_FILENAME = "test_case_inputs/input.txt"
 
@@ -109,12 +67,22 @@ def read_input(filename:str):
         number of pieces given at that home.
         Constraint from given prompt: 0 <= pieces <= 1000 for each home
 
-        If any constraint is violated, this function raises a ValueError with a clear message.
+    Returns:
+        tuple[int, int, list[int]]:
+            A tuple containing:
+            - num_homes: total number of homes in the neighborhood
+            - max_candy_allowed: maximum candy the child may collect
+            - pieces_per_home: list of candy counts for each home
+
+    Raises:
+        ValueError:
+            If the file format is invalid, a line does not contain exactly one
+            integer, or any prompt constraint is violated.
     """
 
     # Read all  lines from the file and enforce:
     # - no blank lines
-    # - - exactly one integer
+    # - exactly one integer per line
     lines = []
     with open(filename, "r") as f:
         for line_number, raw_line in enumerate(f, start=1):
@@ -132,8 +100,7 @@ def read_input(filename:str):
 
             lines.append(tokens[0])
 
-    # Basic structure check: confirm we have at least 2 lines at top for (num_homes and max_candy_allowed)
-    # plus num_homes piece lines:
+    # Basic structure check: the file must contain at least the two header lines for num_homes and max_candy_allowed.
     if len(lines) < 2:
         raise ValueError("Input file must contain at least two lines: homes and max.")
 
@@ -181,10 +148,6 @@ def read_input(filename:str):
 
         pieces_per_home.append(pieces)
 
-    #print("num_homes: ", num_homes)
-    #print("Max_candy_allowed: ", max_candy_allowed)
-    #print("pieces_per_home: ", pieces_per_home)
-
     # Return validated values for num_homes, max_candy_allowed, pieces_per_home
     return num_homes, max_candy_allowed, pieces_per_home
 
@@ -199,6 +162,7 @@ def max_candy(filename: str = INPUT_FILENAME):
             - If there is a tie in best_sum, choose the sequence with the SMALLEST
               starting home index (tie-breaking rule from the prompt)
         3. Prints the expected output message
+            - If no valid range exists, print: "Don't go here"
     """
 
     # 1. Read the validated inputs for num_homes, max_candy_allowed, pieces_per_home:
@@ -220,14 +184,14 @@ def max_candy(filename: str = INPUT_FILENAME):
     for right in range(1, num_homes + 1):
 
         # Add the candy from the new rightmost home into the current window sum.
-        pieces = pieces_per_home[right - 1]  # convert 1-based to zero-based index to complete algo
+        pieces = pieces_per_home[right - 1]  # Convert 1-based home index to 0-based list index.
         current_candy_sum += pieces
 
         # If the sum of the current window exceeds the max candy allowed by parents, shrink window
         # from left until sum is within constraints again:
         while (current_candy_sum > max_candy_allowed) and (left <= right):
             current_candy_sum -= pieces_per_home[left -1]
-            left += 1  # move the left index one to right to exclude one house
+            left += 1  # Shrink the window from the left by excluding one home.
 
         # If we have a non-empty valid window, compare it to current best. Note that a non-empty
         # window means left <= right.

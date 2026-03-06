@@ -233,6 +233,7 @@ Examples of invalid input include:
 - too few or too many house lines
 - values outside the allowed ranges
 
+--- 
 
 ### Output Format Structure
 
@@ -438,7 +439,7 @@ because it is the **first optimal window** discovered. In other words, it is the
 lowest starting / left index, and the lowest ending / right index. 
 
 
-#### Example 1: Leading Zeros
+#### Example 2: Leading Zeros
 
 If the neighborhood candy values are:
 
