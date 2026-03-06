@@ -1,5 +1,6 @@
+
 """
-# Assumptions:
+# Implementation Assumptions:
 - Regarding the structure of the file:
     - The file represents exactly one neighborhood: where the number of lines
     containing an integer from the third line onwards (the number of "homes" lines)

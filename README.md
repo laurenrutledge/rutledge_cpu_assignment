@@ -51,7 +51,9 @@ Using two pointers allows the algorithm to maintain a valid window of consecutiv
 Two pointers define the current window:
 - Left pointer (left) — start of the current window
 - Right pointer (right) — end of the current window
-The algorithm proceeds as follows: 
+
+The algorithm then proceeds as follows: 
+
 1. The right pointer expands the window one home at a time, adding the candy value at that house to a running sum.
 2. If the sum exceeds the maximum allowed, the left pointer moves forward to shrink the window until the candy sum is 
 within the allowed limit.
@@ -59,8 +61,9 @@ within the allowed limit.
 algorithm checks whether the current window produces a better valid sum than the "best sum" recorded prior, and sets the 
 "best sum" to the current window's sum if so.
 
-Because the left pointer only moves forward, the first window encountered with a given sum will always have the smallest 
-starting index. This naturally enforces the tie-breaking rule without additional logic.
+Because the left pointer only moves forward, earlier-starting valid windows are encountered before later-starting ones. 
+In addition, the implementation explicitly enforces the tie-breaking rule by preferring the window with the smallest 
+starting home index whenever two windows achieve the same best sum.
 
 #### Time Complexity: 
 ```text
@@ -157,6 +160,319 @@ python run_tests.py
 
 to execute the full test suite.
 
+--- 
+
+## Implementation Assumptions
+
+### Input File Structure Format
+
+The program reads data from a text file (by default: `input.txt`).  
+
+The file must contain the following values:
+```text
+<number_of_homes>
+<maximum_candy_allowed>
+<candy_at_home_1>
+<candy_at_home_2>
+...
+<candy_at_home_n>
+```
+
+Where:
+- `number_of_homes` — the total number of homes in the neighborhood  
+- `maximum_candy_allowed` — the maximum number of candy pieces a child may collect  
+- Each subsequent line represents the number of candy pieces given at that home
 
 
+**If these input conditions are violated, the program raises a ValueError.**
 
+
+An example input text file may contain the contents: 
+```text
+5
+10
+2
+4
+3
+2
+1
+```
+... which would represent a neighborhood with: 
+- 5 homes in the neighborhood
+- A maximum allowed candy total of 10
+- Candy distribution per home (starting at home 1) `[2, 4, 3, 2, 1]`
+
+
+### Output Format Structure
+
+The program prints exactly **one line of output**.
+
+The output depends on whether a valid sequence of homes exists.
+
+#### On Success
+
+If a valid sequence of homes exists, the program prints:
+```text
+Start at home <first> and go to home <last> getting <sum> pieces of candy
+```
+
+For example, given the sample input above (a success case), the expected output would be: 
+```text
+Start at home 2 and go to home 5 getting 10 pieces of candy
+```
+
+#### On Failure
+
+If **no valid sequence of one or more homes** satisfies the candy limit, the program prints:
+```text
+Don't go here
+```
+
+---
+
+### Data Types 
+The program operates entirely on **integer values** parsed from the input file.
+
+#### Input Data Types
+
+| Variable | Type | Description |
+|--------|------|-------------|
+| `number_of_homes` | integer | Total number of homes in the neighborhood |
+| `maximum_candy_allowed` | integer | Maximum number of candy pieces the child is allowed to collect |
+| `candy_at_home_i` | integer | Number of candy pieces given at the *i-th* home |
+
+All values in the input file must be valid integers.
+
+
+#### Internal Data Types
+
+Within the implementation, the following Python data types are used:
+
+| Variable | Type | Purpose |
+|--------|------|--------|
+| `num_homes` | `int` | Stores the number of homes |
+| `max_candy_allowed` | `int` | Stores the maximum candy constraint |
+| `pieces_per_home` | `list[int]` | Stores the candy values for each home |
+| `current_candy_sum` | `int` | Tracks the candy sum within the current sliding window |
+| `left` | `int` | Left pointer of the sliding window |
+| `right` | `int` | Right pointer of the sliding window |
+| `best_candy_sum` | `int` | Best valid candy total found so far |
+| `best_left_index` | `int` | Starting home index of the best window |
+| `best_right_index` | `int` | Ending home index of the best window |
+
+
+#### Constraints on Values
+
+From the problem specification:
+
+| Variable | Constraint |
+|--------|------------| 
+| `number_of_homes` | `0 < homes ≤ 10,000` |
+| `maximum_candy_allowed` | `0 ≤ max ≤ 1,000` |
+| `candy_at_home_i` | `0 ≤ pieces ≤ 1,000` |
+
+All candy values are **non-negative integers**, which is an important requirement that enables the **sliding window 
+algorithm** used in this solution.
+
+--- 
+### Ordering of Homes
+
+Homes are assumed to appear in fixed sequential order within the input file.
+
+| Rule                   | Description                                            |
+| ---------------------- | ------------------------------------------------------ |
+| Fixed ordering         | Homes are implicitly ordered as `1, 2, 3, ..., n`.     |
+| No reordering allowed  | The algorithm cannot rearrange homes.                  |
+| Consecutive visitation | Valid solutions must visit **consecutive homes only**. |
+
+Examples of Valid & Invalid Sequences: 
+
+#### Valid Sequence: 
+```text
+homes 3 → 7
+```
+
+#### Invalid Sequence: 
+```text
+homes 1 → 4 → 6
+```
+
+--- 
+### Child Behavior Rules
+Based on the problem constraints, the child must follow these rules:
+
+| Rule                 | Explanation                                                                  |
+| -------------------- | ---------------------------------------------------------------------------- |
+| Visit homes in order | The child walks through the neighborhood sequentially.                       |
+| No skipping          | If a window includes homes `i..j`, every home in that range must be visited. |
+| Take all candy       | The child must take **all pieces of candy offered** at each home.            |
+| No discarding        | Candy cannot be discarded to stay within the limit.                          |
+
+This means that the candy total for a window will always be: 
+```text
+sum(candy[i..j])
+```
+
+---
+
+### Window Size Constraint
+
+The assignment requires selecting one or more homes.
+
+| Constraint          | Meaning                                            |
+| ------------------- | -------------------------------------------------- |
+| Minimum window size | A valid window must include **at least one home**. |
+| Empty window        | An empty selection is not allowed.                 |
+
+If no single home satisfies the candy constraint, the program outputs:
+```text
+Don't go here
+```
+
+--- 
+### Tie Breaking Rules
+
+The problem statement specifies the following primary tie-breaking rule:
+
+- If multiple valid sequences achieve the same best candy sum, choose the sequence with the **smallest starting home 
+index**. Or more specifically: 
+
+| Rule               | Behavior                                                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| Primary tie-break  | Choose the window with the **smallest starting home index**.                                                                   |
+| Secondary behavior | If two windows have the same start and sum, the algorithm keeps the **first encountered window** while scanning left-to-right. |
+
+
+A perfect example of where you may see this could look like the below example:
+
+If houses give out [candy]: 
+
+```text
+[2, 3, 2, 3]
+max = 5
+```
+Valid Windows would therefore include: 
+```text
+1-2
+2-3
+3-4
+```
+
+As such, the expected output of the algorithm in this tie-breaking case would be: 
+```text
+Start at home 1 and go to home 2 getting 5 pieces of candy
+```
+because it is the first optimal window discovered.
+
+
+***However***, it is also possible for multiple windows to have:
+
+- the same best sum, and
+- the same starting home index
+
+This can happen when leading or trailing homes contribute `0` pieces of candy.
+
+In these cases, this implementation keeps the **first such window encountered while scanning left-to-right**, which 
+corresponds to the **smallest ending home index** among windows tied on both start and sum. This design choice was
+chosen because Halloween is equally as much about showing off your costume as it is collecting candy! That said, it 
+is assumed that if the child has yet to collect any candy, and there exist a few houses at the end of the road that will
+still give out candy within the allowed_maximum, then the child will want to stop at the houses that don't give out candy
+to show off their costume before getting to houses IN THE SAME NEIGHBORHOOD that will give out at least one piece. 
+
+At the same time, if no houses in the neighborhood give out candy and it is pre-known to the children, then it is assumed
+that the children will only want to show off their costume at one house before heading home to eat the candy at their own 
+house! 
+
+Below are two examples that fall within this "unique tie-breaking case" category: 
+
+#### Example 1: Trailing Zeros 
+
+If the neighborhood candy values are:
+
+```text
+[5, 0, 0, 0]
+max = 5
+```
+then all of the following windows are valid and achieve the same best sum:
+```text
+1-1
+1-2
+1-3
+1-4
+```
+
+In this case, it is expected that the algorithm will select: 
+```text
+Start at home 1 and go to home 1 getting 5 pieces of candy
+```
+because it is the **first optimal window** discovered. In other words, it is the valid window of the options with the 
+lowest starting / left index, and the lowest ending / right index. 
+
+
+#### Example 1: Leading Zeros
+
+If the neighborhood candy values are:
+
+```text
+[0, 0, 5, 0, 0]
+max = 5
+```
+
+then again, multiple windows achieve the best sum: 
+
+```text
+1-3
+1-4
+1-5
+2-3
+2-4
+2-5
+3-3
+3-4
+3-5
+```
+
+According to the assignment's tie-breaking rule and the assumptions noted above, the correct output is:
+```text
+Start at home 1 and go to home 3 getting 5 pieces of candy
+```
+
+This is because it is the 1-3 window that has the smallest starting home index, and the left-most right index. The
+left-most right index is what is selected because the window 1-3 will get noticed prior than window 1-4, etc.
+
+## Test Cases
+
+The following test cases were designed to validate both correctness and edge-case handling, including boundary 
+conditions, tie-breaking rules, zero values, and algorithmic behavior of the sliding window implementation.
+
+All test input files are located in the `test_case_inputs/` directory and executed via `run_tests.py`.
+
+| Filename | Expected Output | Purpose / Edge Case Covered                                                                                 |
+|---------|----------------|-------------------------------------------------------------------------------------------------------------|
+| `given_sample_input.txt` | `Start at home 2 and go to home 5 getting 10 pieces of candy` | Basic example from the assignment prompt to confirm baseline correctness.                                   |
+| `single_home_under_max.txt` | `Start at home 1 and go to home 1 getting 7 pieces of candy` | Tests behavior when only one home exists and the candy amount is under the limit.                           |
+| `single_home_equal_max.txt` | `Start at home 1 and go to home 1 getting 7 pieces of candy` | Verifies that `sum == max` is treated as a valid solution when one home exists.                             |
+| `single_home_over_max.txt` | `Don't go here` | Ensures the algorithm correctly rejects a neighborhood where the only home exceeds the allowed candy limit. |
+| `max_zero_all_positive.txt` | `Don't go here` | Tests the case where `max = 0` but all homes give positive candy.                                           |
+| `zeros_allowed_max_zero.txt` | `Start at home 1 and go to home 1 getting 0 pieces of candy` | Confirms the algorithm handles zero candy values correctly when `max = 0`.                                  |
+| `shrink_window_multiple_times.txt` | `Start at home 3 and go to home 6 getting 7 pieces of candy` | Verifies that the sliding window correctly shrinks repeatedly when the sum exceeds the maximum.             |
+| `best_window_middle.txt` | `Start at home 1 and go to home 2 getting 9 pieces of candy` | Tests that the optimal window may occur in the middle of the neighborhood.                                  |
+| `tie_breaker_case.txt` | `Start at home 1 and go to home 2 getting 4 pieces of candy` | Confirms that when two windows have the same sum, the window with the smallest starting index is chosen.    |
+| `dont_go_here_all_exceed_max.txt` | `Don't go here` | Tests failure when every home individually exceeds the allowed maximum, multiple homes included.            |
+| `all_homes_exceed_max.txt` | `Don't go here` | Additional validation that the algorithm correctly detects when no valid window exists.                     |
+| `all_homes_fit.txt` | `Start at home 1 and go to home 4 getting 35 pieces of candy` | Ensures the algorithm correctly identifies when the entire neighborhood is the optimal window.              |
+| `tie_same_best_sum_different_lengths.txt` | `Start at home 1 and go to home 2 getting 5 pieces of candy` | Tests tie-breaking behavior when two windows produce the same best sum but have different lengths.          |
+| `leading_zeros_before_best.txt` | `Start at home 1 and go to home 3 getting 3 pieces of candy` | Verifies that leading zeros do not prevent earlier valid windows from being selected.                       |
+| `best_window_at_end.txt` | `Start at home 5 and go to home 6 getting 8 pieces of candy` | Ensures the algorithm correctly identifies a best window that occurs at the end of the neighborhood.        |
+| `first_home_over_max_others_not.txt` | `Start at home 2 and go to home 3 getting 2 pieces of candy` | Tests that the algorithm skips an invalid first home and correctly identifies a later valid window.         |
+| `all_zeros_max_positive.txt` | `Start at home 1 and go to home 1 getting 0 pieces of candy` | Confirms correct handling when all homes give zero candy but `max > 0`.                                     |
+| `zero_then_max_then_zeros.txt` | `Start at home 1 and go to home 2 getting 5 pieces of candy` | Tests behavior when zeros appear before and after the optimal candy value.                                  |
+| `zeros_bridge_two_possible_windows.txt` | `Start at home 2 and go to home 7 getting 5 pieces of candy` | Ensures the tie-breaking rule selects the earliest valid start among multiple windows with the same sum.    |
+| `max_1000_single_home_exactly_1000.txt` | `Start at home 1 and go to home 1000 getting 1000 pieces of candy` | Validates correct behavior at the upper bound of allowed candy values.                                      |
+
+### Stress Tests
+
+| Filename | Expected Output | Purpose |
+|---------|----------------|---------|
+| `stress_10000_all_ones.txt` | `Start at home 1 and go to home 1000 getting 1000 pieces of candy` | Tests performance with the maximum allowed number of homes (10,000) and verifies linear-time scaling. |
+| `stress_10000_alternating.txt` | `Start at home 2 and go to home 2 getting 1 pieces of candy` | Stress test with alternating values to ensure the sliding window repeatedly expands and shrinks efficiently. |
